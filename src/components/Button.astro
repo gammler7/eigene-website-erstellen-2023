@@ -20,7 +20,7 @@ const { url, title, external } = Astro.props;
     href={url}
     target={external ? "_blank" : undefined}
     rel={external ? "noopener noreferrer" : undefined}
-    class="inline-flex items-center rounded-lg border-2 border-solid bg-dark text-light p-2 px-4 md:py-2.5 md:px-6 font-semibold hover:border-dark hover:bg-transparent hover:text-dark dark:bg-light dark:text-dark dark:hover:border-light dark:hover:bg-dark dark:hover:text-light"
+    class="inline-flex items-center rounded-lg border-2 border-solid bg-zinc-900 text-zinc-100 p-2 px-4 md:py-2.5 md:px-6 font-semibold hover:border-zinc-800 hover:bg-transparent hover:text-zinc-900 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:border-zinc-200 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
   >
     <span>{title}</span>
     {

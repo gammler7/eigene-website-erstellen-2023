@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { Image } from "@astrojs/image/components";
+import { Image, Picture } from "astro:assets";
 import { sortByDate } from "../utils/sortByDate.js";
 
 import { getCollection } from "astro:content";
@@ -25,7 +25,7 @@ const blogEntries = await getCollection("blog", ({ data }) => {
         .sort(sortByDate)
         .slice(0, 3)
         .map((blogPostEntry) => (
-          <div class="border-2 border-dark dark:border-light p-2 rounded-xl">
+          <div class="border-2 border-zinc-800 dark:border-zinc-200 p-2 rounded-xl">
             <a href={`/blog/${blogPostEntry.slug}`}>
               <Image
                 src={blogPostEntry.data.image.src}

@@ -4,6 +4,8 @@ import Footer from "../components/Footer.astro";
 import NavigationMobile from "../components/NavigationMobile.astro";
 
 const { title, description, keywords, author } = Astro.props.frontmatter;
+import "../styles/global.css";
+import appUrl from "../js/app.js?url";
 ---
 
 <!DOCTYPE html>
@@ -18,7 +20,7 @@ const { title, description, keywords, author } = Astro.props.frontmatter;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
   </head>
-  <body class="font-mono bg-light dark:bg-dark text-dark dark:text-light">
+  <body class="font-mono bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
     <main
       id="swup"
       class="relative md:container md:mx-auto w-full min-h-screen"
@@ -30,9 +32,8 @@ const { title, description, keywords, author } = Astro.props.frontmatter;
       <Footer />
       <NavigationMobile />
     </main>
-    <script src="../js/app.js"></script>
+    <script type="module" src={appUrl}></script>
   </body>
 </html>
-<style is:global>
-  @import "../styles/base.css";
-</style>
+
+
