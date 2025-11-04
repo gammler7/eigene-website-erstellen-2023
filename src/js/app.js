@@ -1,91 +1,81 @@
-import Swup from "swup";
-import SwupScrollPlugin from "@swup/scroll-plugin";
-import SwupHeadPlugin from "@swup/head-plugin";
-import SwupA11yPlugin from "@swup/a11y-plugin";
+console.log("✅ app.js geladen", new Date().toISOString());
 
-class PageHandler {
-  constructor() {
-    this.applyInitialTheme();
-    this.setThemeIcon();
-    this.bindThemeToggle();
-    this.typeWriterManager();
-  }
+/** ---------- THEME CONTROLLER (einmalig, HMR-sicher) ---------- */
+(() => {
+  if (window.__themeBound) return;
+  window.__themeBound = true;
 
-  applyInitialTheme() {
-    const saved = localStorage.getItem("theme");
-    const prefersDark =
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const doc = document.documentElement;
 
-    const shouldBeDark = saved === "dark" || (saved == null && prefersDark);
-    document.documentElement.classList.toggle("dark", !!shouldBeDark);
-  }
+  const save = (v) => { try { localStorage.setItem("theme", v); } catch {} };
+  const isDark = () => doc.classList.contains("dark");
 
-  setThemeIcon() {
-    const colorSwitch = document.querySelector("#colorSwitch");
-    if (!colorSwitch) return;
+  const iconSun  = () => `<img src="/icons/sun.svg"  alt="Helles Theme" class="w-6 h-6">`;
+  const iconMoon = () => `<img src="/icons/moon.svg" alt="Dunkles Theme" class="w-6 h-6">`;
 
-    const isDark = document.documentElement.classList.contains("dark");
-    colorSwitch.innerHTML = isDark
-      ? `<img src="/icons/sun.svg?a=${Math.random()}" alt="sun" class="w-6 h-6" />`
-      : `<img src="/icons/moon.svg?a=${Math.random()}" alt="moon" class="w-6 h-6" />`;
-  }
-
-  bindThemeToggle() {
-    const colorSwitch = document.querySelector("#colorSwitch");
-    if (!colorSwitch) return;
-
-    colorSwitch.addEventListener("click", () => {
-      const isNowDark = document.documentElement.classList.toggle("dark");
-      localStorage.setItem("theme", isNowDark ? "dark" : "");
-      this.setThemeIcon();
-    });
-  }
-
-  typeWriterManager() {
-    const el = document.querySelector("#dynamic-header-text");
+  const setIcon = () => {
+    const el = document.getElementById("colorSwitch");
     if (!el) return;
+    el.setAttribute("aria-pressed", String(isDark()));
+    el.innerHTML = isDark() ? iconSun() : iconMoon();
+  };
+  window.__setThemeIcon = setIcon;
 
-    const words = ["Design", "Kaffee", "Pizza"];
-    let i = 0;
-    let current = "";
-    let isDeleting = false;
+  const apply = (wantDark) => {
+    doc.classList.toggle("dark", wantDark);
+    save(wantDark ? "dark" : "light");
+    setIcon();
+  };
 
-    const tick = () => {
-      const word = words[i];
+  // Globales Delegations-Click (überlebt Swup + HMR)
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#colorSwitch");
+    if (!btn) return;
+    apply(!isDark());
+  });
 
-      current = isDeleting
-        ? word.substring(0, current.length - 1)
-        : word.substring(0, current.length + 1);
-
-      el.innerHTML = current;
-
-      if (!isDeleting && current === word) {
-        isDeleting = true;
-        setTimeout(tick, 3000);
-      } else if (isDeleting && current === "") {
-        isDeleting = false;
-        i = (i + 1) % words.length;
-        setTimeout(tick, 500);
-      } else {
-        setTimeout(tick, 100);
-      }
-    };
-
-    tick();
+  // Icon initial setzen
+  const ready = () => setIcon();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ready, { once: true });
+  } else {
+    ready();
   }
-}
 
-const init = () => new PageHandler();
+  // Systemwechsel nur berücksichtigen, wenn kein Saved-Theme existiert
+  try {
+    const hasSaved = !!localStorage.getItem("theme");
+    const m = window.matchMedia("(prefers-color-scheme: dark)");
+    if (!hasSaved && m?.addEventListener) {
+      m.addEventListener("change", (ev) => apply(ev.matches));
+    }
+  } catch {}
+})();
 
-if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", init);
-}
+/** ---------- SWUP SINGLETON (nur dynamisch laden) ---------- */
+(async () => {
+  try {
+    const [{ default: Swup }, { default: SwupA11yPlugin }, { default: SwupHeadPlugin }, { default: SwupScrollPlugin }] =
+      await Promise.all([
+        import('swup'),
+        import('@swup/a11y-plugin'),
+        import('@swup/head-plugin'),
+        import('@swup/scroll-plugin'),
+      ]);
 
-const swup = new Swup({
-  animationSelector: '[class*="swuptransition-"]',
-  plugins: [new SwupA11yPlugin(), new SwupHeadPlugin(), new SwupScrollPlugin()],
-});
-
-swup.on("contentReplaced", init);
+    if (!window.__swup) {
+      window.__swup = new Swup({
+        animationSelector: '[class*="swuptransition-"]',
+        plugins: [new SwupA11yPlugin(), new SwupHeadPlugin(), new SwupScrollPlugin()],
+      });
+    }
+    if (!window.__swupThemeListenerBound) {
+      window.__swupThemeListenerBound = true;
+      window.__swup.on('contentReplaced', () => {
+        if (typeof window.__setThemeIcon === 'function') window.__setThemeIcon();
+      });
+    }
+  } catch (err) {
+    console.warn('Swup konnte nicht geladen werden – Theme-Toggle läuft trotzdem.', err);
+  }
+})();
