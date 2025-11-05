@@ -1,12 +1,11 @@
 console.log("✅ app.js geladen", new Date().toISOString());
 
-/** ---------- THEME CONTROLLER (einmalig, HMR-sicher) ---------- */
+/* ---------------- THEME (wie gehabt) ---------------- */
 (() => {
   if (window.__themeBound) return;
   window.__themeBound = true;
 
   const doc = document.documentElement;
-
   const save = (v) => { try { localStorage.setItem("theme", v); } catch {} };
   const isDark = () => doc.classList.contains("dark");
 
@@ -27,55 +26,65 @@ console.log("✅ app.js geladen", new Date().toISOString());
     setIcon();
   };
 
-  // Globales Delegations-Click (überlebt Swup + HMR)
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("#colorSwitch");
     if (!btn) return;
     apply(!isDark());
   });
 
-  // Icon initial setzen
   const ready = () => setIcon();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", ready, { once: true });
   } else {
     ready();
   }
-
-  // Systemwechsel nur berücksichtigen, wenn kein Saved-Theme existiert
-  try {
-    const hasSaved = !!localStorage.getItem("theme");
-    const m = window.matchMedia("(prefers-color-scheme: dark)");
-    if (!hasSaved && m?.addEventListener) {
-      m.addEventListener("change", (ev) => apply(ev.matches));
-    }
-  } catch {}
 })();
 
-/** ---------- SWUP SINGLETON (nur dynamisch laden) ---------- */
-(async () => {
-  try {
-    const [{ default: Swup }, { default: SwupA11yPlugin }, { default: SwupHeadPlugin }, { default: SwupScrollPlugin }] =
-      await Promise.all([
-        import('swup'),
-        import('@swup/a11y-plugin'),
-        import('@swup/head-plugin'),
-        import('@swup/scroll-plugin'),
-      ]);
+/* ---------------- TYPEWRITER (re-added, HMR + Swup sicher) ---------------- */
+(() => {
+  // vorherigen Lauf stoppen (bei HMR/Swup)
+  if (typeof window.__typewriterCleanup === "function") {
+    try { window.__typewriterCleanup(); } catch {}
+  }
 
-    if (!window.__swup) {
-      window.__swup = new Swup({
-        animationSelector: '[class*="swuptransition-"]',
-        plugins: [new SwupA11yPlugin(), new SwupHeadPlugin(), new SwupScrollPlugin()],
-      });
+  let timeoutId;
+
+  function startTypewriter() {
+    const el = document.getElementById("dynamic-header-text");
+    if (!el) return;
+
+    const words = ["Design", "Kaffee", "Pizza"]; // hier deine Wunschwörter
+    let i = 0, current = "", isDeleting = false;
+
+    const tick = () => {
+      const word = words[i];
+      current = isDeleting ? word.slice(0, current.length - 1)
+                           : word.slice(0, current.length + 1);
+      el.textContent = current;
+
+      let delay = 100;
+      if (!isDeleting && current === word) { isDeleting = true;  delay = 3000; }
+      else if (isDeleting && current === "") { isDeleting = false; i = (i + 1) % words.length; delay = 500; }
+
+      timeoutId = setTimeout(tick, delay);
+    };
+
+    tick();
+  }
+
+  // global für Swup-Callbacks
+  window.__startTypewriter = () => {
+    if (typeof window.__typewriterCleanup === "function") {
+      try { window.__typewriterCleanup(); } catch {}
     }
-    if (!window.__swupThemeListenerBound) {
-      window.__swupThemeListenerBound = true;
-      window.__swup.on('contentReplaced', () => {
-        if (typeof window.__setThemeIcon === 'function') window.__setThemeIcon();
-      });
-    }
-  } catch (err) {
-    console.warn('Swup konnte nicht geladen werden – Theme-Toggle läuft trotzdem.', err);
+    startTypewriter();
+  };
+  window.__typewriterCleanup = () => { if (timeoutId) clearTimeout(timeoutId); };
+
+  // Initial starten
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", window.__startTypewriter, { once: true });
+  } else {
+    window.__startTypewriter();
   }
 })();
