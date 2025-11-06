@@ -70,4 +70,10 @@ html.is-animating .swuptransition-fade {
 @media (min-width: 1280px) {
   #toc { @apply float-right w-1/2 ml-8; }
 }
+:root{
+      --icon-size: 64px;     /* Größe der runden Icon-Badges */
+      --gap: 16px;           /* Abstand zwischen den Icons */
+      --nav-size: 42px;      /* Größe der Navigations-Buttons */
+      --ring: 1px solid #e5e7eb;
+    }
 }
